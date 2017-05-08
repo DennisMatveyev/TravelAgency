@@ -22,6 +22,9 @@ app.set('port', process.env.PORT || 3000);
 
 app.use(express.static(__dirname + '/public'));
 
+// middleware for decoding URL encoded
+app.use(require('body-parser').urlencoded({ extended: true }));
+
 // middleware for implementing partial template
 app.use(function(req, res, next){
     if(!res.locals.partials) res.locals.partials = {};
@@ -52,6 +55,29 @@ app.get('/tours/hood-river', function(req, res){
 
 app.get('/tours/request-group-rate', function(req, res){
     res.render('tours/request-group-rate');
+});
+
+// page with subsribe form
+app.get('/newsletter', function(req, res){
+    res.render('newsletter', { csrf: 'CSRF token goes here' });
+});
+// and view for processing this form
+// app.post('/process' , function(req, res){
+//     console.log('Form (from querystring): ' + req.query.form);
+//     console.log('CSRF token (from hidden form field): ' + req.body._csrf);
+//     console.log('Name (from visible form field): ' + req.body.name);
+//     console.log('Email (from visible form field): ' + req.body.email);
+//     res.redirect(303, '/thank-you' );
+// });
+// and AJAX alternative for processing this form
+app.post('/process', function(req, res){
+    if(req.xhr || req.accepts('json,html') === 'json' ){
+// если здесь есть ошибка, то мы должны отправить { error: 'описание ошибки' }
+        res.send({ success: true });
+    } else {
+// если бы была ошибка, нам нужно было бы перенаправлять на страницу ошибки
+        res.redirect(303, '/thank-you' );
+    }
 });
 
 // routes for demo of client-side Handlebars realization
