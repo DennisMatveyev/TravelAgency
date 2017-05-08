@@ -1,6 +1,9 @@
 var express = require('express');
+var formidable = require('formidable' );
+
 var fortunes = require('./lib/fortunes.js');
 var weatherData = require('./lib/weather.js');
+var credentials = require('./credentials.js');
 
 var app = express();
 
@@ -80,6 +83,27 @@ app.post('/process', function(req, res){
     }
 });
 
+// route for getting page with FILE uploading form
+app.get('/contest/vacation-photo', function(req, res){
+    var now = new Date();
+    res.render('contest/vacation-photo', {
+                                          year: now.getFullYear(),
+                                          month: now. getMonth()
+                                         });
+});
+// and view for processing file uploading
+app.post('/contest/vacation-photo/:year/:month' , function(req, res){
+    var form = new formidable.IncomingForm();
+    form.parse(req, function(err, fields, files){
+        if(err) return res.redirect(303, '/error' );
+        console.log('received fields:' );
+        console.log(fields);
+        console.log('received files:' );
+        console.log(files);
+        res.redirect(303, '/thank-you' );
+    });
+});
+
 // routes for demo of client-side Handlebars realization
 app.get('/nursery-rhyme', function(req, res){
     res.render('nursery-rhyme');
@@ -89,7 +113,7 @@ app.get('/ajax/nursery-rhyme', function(req, res){
         animal: 'бельчонок',
         bodyPart: 'хвост',
         adjective: 'пушистый',
-        noun: 'черт'
+        noun: 'облако'
     });
 });
 
