@@ -28,6 +28,15 @@ app.use(express.static(__dirname + '/public'));
 // middleware for decoding URL encoded
 app.use(require('body-parser').urlencoded({ extended: true }));
 
+// middlewares for cookies
+app.use(require('cookie-parser')(credentials.cookieSecret));
+// and session; in this case session storage is in memory by default
+app.use(require('express-session')({
+    resave: false,
+    saveUninitialized: false,
+    secret: credentials.cookieSecret
+}));
+
 // middleware for implementing partial template
 app.use(function(req, res, next){
     if(!res.locals.partials) res.locals.partials = {};
