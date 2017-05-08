@@ -1,5 +1,6 @@
 var express = require('express');
 var fortunes = require('./lib/fortunes.js');
+var weatherData = require('./lib/weather.js');
 
 var app = express();
 
@@ -11,6 +12,13 @@ app.set('view engine', 'handlebars');
 app.set('port', process.env.PORT || 3000);
 
 app.use(express.static(__dirname + '/public'));
+
+// middleware for implementing partial template
+app.use(function(req, res, next){
+    if(!res.locals.partials) res.locals.partials = {};
+    res.locals.partials.weatherContext = weatherData.getWeatherData();
+    next();
+});
 
 // middleware for tests; recognizes ?test=1 in the query
 app.use(function(req, res, next){
