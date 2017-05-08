@@ -4,8 +4,17 @@ var weatherData = require('./lib/weather.js');
 
 var app = express();
 
-// template engine Handlebars setting
-var handlebars = require('express-handlebars').create({ defaultLayout:'main' });
+// template engine Handlebars setting with custom helper
+var handlebars = require('express-handlebars').create({ defaultLayout:'main',
+                                                        helpers: {
+                                                            section: function(name, options){
+                                                                if(!this._sections) this._sections = {};
+                                                                this._sections[name] = options.fn(this);
+                                                                return null;
+                                                            }
+                                                        }
+                                                      });
+
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
@@ -43,6 +52,19 @@ app.get('/tours/hood-river', function(req, res){
 
 app.get('/tours/request-group-rate', function(req, res){
     res.render('tours/request-group-rate');
+});
+
+// routes for demo of client-side Handlebars realization
+app.get('/nursery-rhyme', function(req, res){
+    res.render('nursery-rhyme');
+});
+app.get('/ajax/nursery-rhyme', function(req, res){
+    res.json({
+        animal: 'бельчонок',
+        bodyPart: 'хвост',
+        adjective: 'пушистый',
+        noun: 'черт'
+    });
 });
 
 // 404
