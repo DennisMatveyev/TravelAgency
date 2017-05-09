@@ -3,6 +3,7 @@ var formidable = require('formidable' );
 
 var fortunes = require('./lib/fortunes.js');
 var weatherData = require('./lib/weather.js');
+var cartValidation = require('./lib/cartValidation.js');
 var credentials = require('./credentials.js');
 
 var app = express();
@@ -36,6 +37,13 @@ app.use(require('express-session')({
     saveUninitialized: false,
     secret: credentials.cookieSecret
 }));
+
+// our custom middleware module; see below more advanced usage
+// app.use(require('./lib/tourRequiresWaiver.js'));
+
+// custom middleware module for cart validation
+app.use(cartValidation.checkWaivers);
+app.use(cartValidation.checkGuestCounts);
 
 // middleware for implementing partial template
 app.use(function(req, res, next){
@@ -99,7 +107,7 @@ app.post('/newsletter', function(req, res){
     }
 
     new NewsletterSignup({ name: name, email: email }).save(function(err) {
-        
+
         if(err) {
             if(req.xhr) return res.json({ error: 'Ошибка базы данных.' });
             req.session.flash = {
@@ -179,16 +187,16 @@ app.get('/ajax/nursery-rhyme', function(req, res){
 });
 
 // 404
-app.use(function(req, res){
+app.use(function(err, req, res, next){
     res.status(404);
-    res.render('404');
+    res.render('404 Not Found');
 });
 
 // 500
 app.use(function(err, req, res, next){
     console.error(err.stack);
     res.status(500);
-    res.render('500');
+    res.render('500 Server Error');
 });
 
 app.listen(app.get('port'), function(){
