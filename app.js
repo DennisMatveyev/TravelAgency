@@ -1,7 +1,7 @@
 var express = require('express');
 var formidable = require('formidable' );
-var connect = require(connect);
-var nodemailer = require('nodemailer');
+// var connect = require(connect);
+// var nodemailer = require('nodemailer');
 
 var fortunes = require('./lib/fortunes.js');
 var weatherData = require('./lib/weather.js');
@@ -10,13 +10,13 @@ var credentials = require('./credentials.js');
 
 var app = express();
 
-var mailTransport = nodemailer.createTransport('SMTP',{
-    service: 'Gmail',
-    auth: {
-        user: credentials.gmail.user,
-        pass: credentials.gmail.password
-    }
-});
+// var mailTransport = nodemailer.createTransport('SMTP',{
+//     service: 'Gmail',
+//     auth: {
+//         user: credentials.gmail.user,
+//         pass: credentials.gmail.password
+//     }
+// });
 
 // template engine Handlebars setting with custom helper
 var handlebars = require('express-handlebars').create({ defaultLayout:'main',
@@ -198,20 +198,20 @@ app.post('/cart/checkout', function(req, res){
         name: name,
         email: email
     };
-    res.render('email/cart-thank-you',
-        { layout: null, cart: cart }, function(err,html){
-            if( err ) console.log('ошибка в шаблоне письма');
-            mailTransport.sendMail({
-                from: '"EnjoyTravel": info@enjoytravel.com',
-                to: cart.billing.email,
-                subject: 'Спасибо за заказ поездки',
-                html: html,
-                generateTextFromHtml: true
-        }, function(err){
-                if(err) console.error('Не могу отправить подтверждение: ' + err.stack);
-            });
-        }
-    );
+    // res.render('email/cart-thank-you',
+    //     { layout: null, cart: cart }, function(err,html){
+    //         if( err ) console.log('ошибка в шаблоне письма');
+    //         mailTransport.sendMail({
+    //             from: '"EnjoyTravel": info@enjoytravel.com',
+    //             to: cart.billing.email,
+    //             subject: 'Спасибо за заказ поездки',
+    //             html: html,
+    //             generateTextFromHtml: true
+    //     }, function(err){
+    //             if(err) console.error('Не могу отправить подтверждение: ' + err.stack);
+    //         });
+    //     }
+    // );
     res.render('cart-thank-you', { cart: cart });
 });
 
@@ -242,6 +242,6 @@ app.use(function(err, req, res, next){
 });
 
 app.listen(app.get('port'), function(){
-    console.log( 'Express is running at http://localhost:' +
+    console.log( 'Express is running in the ' + app.get('env') + ' mode at http://localhost:' +
         app.get('port') + '; press Ctrl+C for exiting.' );
 });
