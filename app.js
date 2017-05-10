@@ -93,6 +93,14 @@ app.use(function(req, res, next){
     next();
 });
 
+// middleware for checking cluster works
+// app.use(function(req,res,next){
+//     var cluster = require('cluster');
+//     if(cluster.isWorker) {
+//         console.log('Исполнитель %d получил запрос', cluster.worker.id);
+//     }
+// });
+
 // routes
 app.get('/', function(req, res){
     res.render('home');
@@ -256,7 +264,22 @@ app.use(function(err, req, res, next){
     res.render('500 Server Error');
 });
 
-app.listen(app.get('port'), function(){
-    console.log( 'Express is running in the ' + app.get('env') + ' mode at http://localhost:' +
-        app.get('port') + '; press Ctrl+C for exiting.' );
-});
+// for the purpose of clusterization, horizontal scaling
+function startServer() {
+    app.listen(app.get('port'), function() {
+        console.log( 'Express запущен в режиме ' + app.get('env') +
+            ' на http://localhost:' + app.get('port') +
+            '; нажмите Ctrl+C для завершения.' );
+    });
+}
+
+if(require.main === module){
+    // Приложение запускается непосредственно;
+    // запускаем сервер приложения
+    startServer();
+} else {
+    // Приложение импортируется как модуль
+    // посредством "require":
+    // экспортируем функцию для создания сервера
+    module.exports = startServer;
+}
