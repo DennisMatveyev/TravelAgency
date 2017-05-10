@@ -3,7 +3,6 @@ var formidable = require('formidable' );
 var connect = require('connect');
 var fs = require('fs');
 var mongoose = require('mongoose');
-var mongodb = require('mongodb');
 // var nodemailer = require('nodemailer');
 
 var fortunes = require('./lib/fortunes.js');
@@ -31,6 +30,22 @@ switch(app.get('env')){
     default:
         throw new Error('Unknown environment: ' + app.get('env'));
 }
+
+// connect-redis would be better for session storage
+var MongoSessionStore = require('session-mongoose')(require('connect')); // connect 2.0; v3 doesn't work
+var sessionStore = new MongoSessionStore({
+    url: credentials.mongo[app.get('env')].connectionString
+});
+
+// processing cookies and using mongodb as session storage
+app.use(require('cookie-parser')(credentials.cookieSecret));
+app.use(require('express-session')({
+    resave: false,
+    saveUninitialized: false,
+    secret: credentials.cookieSecret,
+    store: sessionStore
+}));
+
 
 // HARDCODE for filling DB
 Vacation.find(function(err, vacations){
@@ -163,15 +178,6 @@ app.use(express.static(__dirname + '/public'));
 
 // middleware for decoding URL encoded
 app.use(require('body-parser').urlencoded({ extended: true }));
-
-// middlewares for cookies
-app.use(require('cookie-parser')(credentials.cookieSecret));
-// and session; in this case session storage is in memory by default
-app.use(require('express-session')({
-    resave: false,
-    saveUninitialized: false,
-    secret: credentials.cookieSecret
-}));
 
 // choose logging tool depending on mode
 switch(app.get('env')){
@@ -358,22 +364,42 @@ app.post('/contest/vacation-photo/:year/:month', function(req, res){
     });
 });
 
+app.get('/set-currency/:currency', function(req,res){
+    req.session.currency = req.params.currency;
+    return res.redirect(303, '/vacations');
+});
+
+function convertFromUSD(value, currency){
+    switch(currency){
+        case 'USD': return value * 1;
+        case 'GBP': return value * 0.6;
+        case 'BTC': return value * 0.0023707918444761;
+        default: return NaN;
+    }
+}
+
 // get page with actual vacations
 app.get('/vacations', function(req, res){
     Vacation.find({ available: true }, function(err, vacations){
+        var currency = req.session.currency || 'USD';
         var context = {
+            currency: currency,
             vacations: vacations.map(function(vacation){
                 return {
                     sku: vacation.sku,
                     name: vacation.name,
                     description: vacation.description,
-                    // there is no any mode for setting methods in handlebars views
-                    // that's why we are passing variables into context in that way
-                    price: vacation.getDisplayPrice(),
-                    inSeason: vacation.inSeason
+                    inSeason: vacation.inSeason,
+                    price: convertFromUSD(vacation.priceInCents/100, currency),
+                    qty: vacation.qty
                 }
             })
         };
+        switch(currency){
+            case 'USD': context.currencyUSD = 'selected'; break;
+            case 'GBP': context.currencyGBP = 'selected'; break;
+            case 'BTC': context.currencyBTC = 'selected'; break;
+        }
         res.render('vacations', context);
     });
 });
