@@ -234,6 +234,20 @@ app.use(function(req, res, next){
 
 
 // ROUTES
+
+// создаем поддомен "admin"... это должно находиться
+// до всех остальных маршрутов
+var admin = express.Router();
+app.use(vhost('admin.*', admin));
+// создаем маршруты для "admin"; это можно разместить в любом месте.
+admin.get('/', function(req, res){
+    res.render('admin/home');
+});
+admin.get('/users', function(req, res){
+    res.render('admin/users');
+});
+
+
 app.get('/', function(req, res){
     res.render('home');
 });
