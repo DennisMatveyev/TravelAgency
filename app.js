@@ -2,17 +2,19 @@ var express = require('express');
 var formidable = require('formidable' );
 var connect = require('connect');
 var fs = require('fs');
+var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 // var nodemailer = require('nodemailer');
 
 var fortunes = require('./lib/fortunes.js');
 var weatherData = require('./lib/weather.js');
 var cartValidation = require('./lib/cartValidation.js');
 var credentials = require('./credentials.js');
+var Vacation = require('./models/vacation.js');
+var VacationInSeason = require ('./models/vacationInSeason.js');
 
 var app = express();
 
-var mongoose = require('mongoose');
-var mongodb = require('mongodb');
 var opts = {
     server: {
         socketOptions: { keepAlive: 1 }
@@ -30,7 +32,6 @@ switch(app.get('env')){
         throw new Error('Unknown environment: ' + app.get('env'));
 }
 
-var Vacation = require('./models/vacation.js');
 // HARDCODE for filling DB
 Vacation.find(function(err, vacations){
     if(err) return console.error(err);
@@ -375,6 +376,36 @@ app.get('/vacations', function(req, res){
         };
         res.render('vacations', context);
     });
+});
+
+app.get('/notify-me-when-in-season', function(req, res){
+    res.render('notify-me-when-in-season', { sku: req.query.sku });
+});
+app.post('/notify-me-when-in-season', function(req, res){
+    VacationInSeason.update(
+        { email: req.body.email },
+        { $push: { skus: req.body.sku } },
+        { upsert: true },
+        function(err){
+            if(err) {
+                console.error(err.stack);
+                req.session.flash = {
+                    type: 'danger',
+                    intro: 'Упс!',
+                    message: 'При обработке вашего запроса ' +
+                    'произошла ошибка.'
+                };
+                return res.redirect(303, '/vacations');
+            }
+            req.session.flash = {
+                type: 'success',
+                intro: 'Спасибо!',
+                message: 'Вы будете оповещены, когда наступит ' +
+                'сезон для этого тура.'
+            };
+            return res.redirect(303, '/vacations');
+        }
+    );
 });
 
 // cart processing
