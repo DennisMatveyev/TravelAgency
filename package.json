@@ -25,6 +25,7 @@
     "morgan": "^1.8.1",
     "nodemailer": "^4.0.1",
     "session-mongoose": "^0.5.2",
+    "underscore": "^1.8.3",
     "vhost": "^3.0.2"
   },
   "devDependencies": {
