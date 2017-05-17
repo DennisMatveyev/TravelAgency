@@ -3,6 +3,7 @@ var formidable = require('formidable' );
 var connect = require('connect');
 var fs = require('fs');
 var mongoose = require('mongoose');
+var rest = require('connect-rest');
 // var nodemailer = require('nodemailer');
 
 var fortunes = require('./lib/fortunes.js');
@@ -10,6 +11,7 @@ var weatherData = require('./lib/weather.js');
 var cartValidation = require('./lib/cartValidation.js');
 var credentials = require('./credentials.js');
 var Vacation = require('./models/vacation.js');
+var Attraction = require('./models/attraction.js');
 
 var app = express();
 
@@ -178,6 +180,9 @@ app.use(express.static(__dirname + '/public'));
 // middleware for decoding URL encoded
 app.use(require('body-parser').urlencoded({ extended: true }));
 
+// middleware for CORS for our API
+app.use('/api', require('cors')());
+
 // choose logging tool depending on mode
 switch(app.get('env')){
     case 'development':
@@ -249,22 +254,150 @@ app.use(function(req, res, next){
 // import all other routes
 require('./routes.js')(app);
 
-// middleware for automatic visualization of views
-var autoViews = {};
 
-app.use(function(req, res, next){
-    var path = req.path.toLowerCase();
-    // проверка кэша; если он там есть, визуализируем представление
-    if(autoViews[path]) return res.render(autoViews[path]);
-    // если его нет в кэше, проверяем наличие
-    // подходящего файла .handlebars
-    if(fs.existsSync(__dirname + '/views' + path + '.handlebars')){
-        autoViews[path] = path.replace(/^\//, '');
-        return res.render(autoViews[path]);
-    }
-    // представление не найдено; переходим к обработчику кода 404
-    next();
+// API ROUTES; only via EXPRESS
+
+// при возврате достопримечательности формируем новый объект,
+// чтобы скрыть внутренние детали реализации
+// app.get('/api/attractions', function(req, res){
+//     Attraction.find({ approved: true }, function(err, attractions){
+//         if(err) return res.status(500).send('Произошла ошибка: ошибка базы данных.');
+//         res.json(attractions.map(function(a){
+//             return {
+//                 name: a.name,
+//                 id: a._id,
+//                 description: a.description,
+//                 location: a.location
+//             }
+//         }));
+//     });
+// });
+//
+// app.post('/api/attraction', function(req, res){
+//     var a = new Attraction({
+//         name: req.body.name,
+//         description: req.body.description,
+//         location: { lat: req.body.lat, lng: req.body.lng },
+//         history: {
+//             event: 'created',
+//             email: req.body.email,
+//             date: new Date()
+//         },
+//         approved: false
+//     });
+//
+//     a.save(function(err, a){
+//         if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
+//         res.json({ id: a._id });
+//     });
+// });
+//
+// app.get('/api/attraction/:id', function(req,res){
+//     Attraction.findById(req.params.id, function(err, a){
+//         if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
+//         res.json({
+//             name: a.name,
+//             id: a._id,
+//             description: a.description,
+//             location: a.location
+//         });
+//     });
+// });
+
+
+// API ROUTES; via CONNECT-REST plugin
+
+// rest-функции принимают параметры: запрос (обычный), объект контента, представляющий собой
+// синтаксически разобранное тело запроса, и функцию обратного вызова, которую
+// можно использовать для асинхронных вызовов API
+rest.get('/attractions', function(req, content, cb){
+    Attraction.find({ approved: true }, function(err, attractions){
+        if(err) return cb({ error: 'Внутренняя ошибка.' });
+        cb(null, attractions.map(function(a){
+            return {
+                name: a.name,
+                description: a.description,
+                location: a.location
+            };
+        }));
+    });
 });
+
+rest.post('/attraction', function(req, content, cb){
+    var a = new Attraction({
+        name: req.body.name,
+        description: req.body.description,
+        location: { lat: req.body.lat, lng: req.body.lng },
+        history: {
+            event: 'created',
+            email: req.body.email,
+            date: new Date()
+        },
+        approved: false
+    });
+
+    a.save(function(err, a){
+        if(err) return cb({ error: 'Невозможно добавить ' +
+                                   'достопримечательность.' });
+        cb(null, { id: a._id });
+    });
+});
+
+rest.get('/attraction/:id', function(req, content, cb){
+    Attraction.findById(req.params.id, function(err, a){
+        if(err) return cb({ error: 'Невозможно извлечь ' +
+                                   'достопримечательность.' });
+        cb(null, {
+            name: attraction.name,
+            description: attraction.description,
+            location: attraction.location
+        });
+    });
+});
+
+// Конфигурация API
+var apiOptions = {
+    context: '/api',
+    domain: require('domain').create()
+};
+
+// Компоновка API в конвейер
+app.use(rest.rester(apiOptions));
+
+// при создании API мы указали домен.
+// Это позволяет изолировать ошибки API и принимать соответствующие
+// меры. connect-rest будет автоматически отправлять код ответа 500 при обнаруже-
+// нии ошибки в домене, так что остается только выполнить журналирование
+// и остановить сервер, например:
+apiOptions.domain.on('error', function(err){
+    console.log('API domain error.\n', err.stack);
+    setTimeout(function(){
+        console.log('Останов сервера после ошибки домена API.');
+        process.exit(1);
+    }, 5000);
+    server.close();
+    var worker = require('cluster').worker;
+    if(worker) worker.disconnect();
+});
+
+
+// middleware for automatic visualization of views
+// var autoViews = {};
+//
+// app.use(function(req, res, next){
+//     var path = req.path.toLowerCase();
+//     // проверка кэша; если он там есть, визуализируем представление
+//     if(autoViews[path]) return res.render(autoViews[path]);
+//     // если его нет в кэше, проверяем наличие
+//     // подходящего файла .handlebars
+//     if(fs.existsSync(__dirname + '/views' + path + '.handlebars')){
+//         autoViews[path] = path.replace(/^\//, '');
+//         return res.render(autoViews[path]);
+//     }
+//     // представление не найдено; переходим к обработчику кода 404
+//     next();
+// });
+
 
 // 404
 app.use(function(err, req, res, next){
