@@ -259,71 +259,21 @@ require('./routes.js')(app);
 
 // при возврате достопримечательности формируем новый объект,
 // чтобы скрыть внутренние детали реализации
-// app.get('/api/attractions', function(req, res){
-//     Attraction.find({ approved: true }, function(err, attractions){
-//         if(err) return res.status(500).send('Произошла ошибка: ошибка базы данных.');
-//         res.json(attractions.map(function(a){
-//             return {
-//                 name: a.name,
-//                 id: a._id,
-//                 description: a.description,
-//                 location: a.location
-//             }
-//         }));
-//     });
-// });
-//
-// app.post('/api/attraction', function(req, res){
-//     var a = new Attraction({
-//         name: req.body.name,
-//         description: req.body.description,
-//         location: { lat: req.body.lat, lng: req.body.lng },
-//         history: {
-//             event: 'created',
-//             email: req.body.email,
-//             date: new Date()
-//         },
-//         approved: false
-//     });
-//
-//     a.save(function(err, a){
-//         if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
-//         res.json({ id: a._id });
-//     });
-// });
-//
-// app.get('/api/attraction/:id', function(req,res){
-//     Attraction.findById(req.params.id, function(err, a){
-//         if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
-//         res.json({
-//             name: a.name,
-//             id: a._id,
-//             description: a.description,
-//             location: a.location
-//         });
-//     });
-// });
-
-
-// API ROUTES; via CONNECT-REST plugin
-
-// rest-функции принимают параметры: запрос (обычный), объект контента, представляющий собой
-// синтаксически разобранное тело запроса, и функцию обратного вызова, которую
-// можно использовать для асинхронных вызовов API
-rest.get('/attractions', function(req, content, cb){
+app.get('/api/attractions', function(req, res){
     Attraction.find({ approved: true }, function(err, attractions){
-        if(err) return cb({ error: 'Внутренняя ошибка.' });
-        cb(null, attractions.map(function(a){
+        if(err) return res.status(500).send('Произошла ошибка: ошибка базы данных.');
+        res.json(attractions.map(function(a){
             return {
                 name: a.name,
+                id: a._id,
                 description: a.description,
                 location: a.location
-            };
+            }
         }));
     });
 });
 
-rest.post('/attraction', function(req, content, cb){
+app.post('/api/attraction', function(req, res){
     var a = new Attraction({
         name: req.body.name,
         description: req.body.description,
@@ -337,48 +287,99 @@ rest.post('/attraction', function(req, content, cb){
     });
 
     a.save(function(err, a){
-        if(err) return cb({ error: 'Невозможно добавить ' +
-                                   'достопримечательность.' });
-        cb(null, { id: a._id });
+        if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
+        res.json({ id: a._id });
     });
 });
 
-rest.get('/attraction/:id', function(req, content, cb){
+app.get('/api/attraction/:id', function(req,res){
     Attraction.findById(req.params.id, function(err, a){
-        if(err) return cb({ error: 'Невозможно извлечь ' +
-                                   'достопримечательность.' });
-        cb(null, {
-            name: attraction.name,
-            description: attraction.description,
-            location: attraction.location
+        if(err) return res.status(500).send(' Произошла ошибка: ошибка базы данных.');
+        res.json({
+            name: a.name,
+            id: a._id,
+            description: a.description,
+            location: a.location
         });
     });
 });
 
-// Конфигурация API
-var apiOptions = {
-    context: '/api',
-    domain: require('domain').create()
-};
 
-// Компоновка API в конвейер
-app.use(rest.rester(apiOptions));
+// API ROUTES; via CONNECT-REST plugin
 
-// при создании API мы указали домен.
-// Это позволяет изолировать ошибки API и принимать соответствующие
-// меры. connect-rest будет автоматически отправлять код ответа 500 при обнаруже-
-// нии ошибки в домене, так что остается только выполнить журналирование
-// и остановить сервер, например:
-apiOptions.domain.on('error', function(err){
-    console.log('API domain error.\n', err.stack);
-    setTimeout(function(){
-        console.log('Останов сервера после ошибки домена API.');
-        process.exit(1);
-    }, 5000);
-    server.close();
-    var worker = require('cluster').worker;
-    if(worker) worker.disconnect();
-});
+// rest-функции принимают параметры: запрос (обычный), объект контента, представляющий собой
+// синтаксически разобранное тело запроса, и функцию обратного вызова, которую
+// можно использовать для асинхронных вызовов API
+
+// rest.get('/attractions', function(req, content, cb){
+//     Attraction.find({ approved: true }, function(err, attractions){
+//         if(err) return cb({ error: 'Внутренняя ошибка.' });
+//         cb(null, attractions.map(function(a){
+//             return {
+//                 name: a.name,
+//                 description: a.description,
+//                 location: a.location
+//             };
+//         }));
+//     });
+// });
+//
+// rest.post('/attraction', function(req, content, cb){
+//     var a = new Attraction({
+//         name: req.body.name,
+//         description: req.body.description,
+//         location: { lat: req.body.lat, lng: req.body.lng },
+//         history: {
+//             event: 'created',
+//             email: req.body.email,
+//             date: new Date()
+//         },
+//         approved: false
+//     });
+//
+//     a.save(function(err, a){
+//         if(err) return cb({ error: 'Невозможно добавить ' +
+//                                    'достопримечательность.' });
+//         cb(null, { id: a._id });
+//     });
+// });
+//
+// rest.get('/attraction/:id', function(req, content, cb){
+//     Attraction.findById(req.params.id, function(err, a){
+//         if(err) return cb({ error: 'Невозможно извлечь ' +
+//                                    'достопримечательность.' });
+//         cb(null, {
+//             name: attraction.name,
+//             description: attraction.description,
+//             location: attraction.location
+//         });
+//     });
+// });
+//
+// // Конфигурация API
+// var apiOptions = {
+//     context: '/api',
+//     domain: require('domain').create()
+// };
+//
+// // Компоновка API в конвейер
+// app.use(rest.rester(apiOptions));
+//
+// // при создании API мы указали домен.
+// // Это позволяет изолировать ошибки API и принимать соответствующие
+// // меры. connect-rest будет автоматически отправлять код ответа 500 при обнаруже-
+// // нии ошибки в домене, так что остается только выполнить журналирование
+// // и остановить сервер, например:
+// apiOptions.domain.on('error', function(err){
+//     console.log('API domain error.\n', err.stack);
+//     setTimeout(function(){
+//         console.log('Останов сервера после ошибки домена API.');
+//         process.exit(1);
+//     }, 5000);
+//     server.close();
+//     var worker = require('cluster').worker;
+//     if(worker) worker.disconnect();
+// });
 
 
 // middleware for automatic visualization of views
