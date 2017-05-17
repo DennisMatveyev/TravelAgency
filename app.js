@@ -12,8 +12,26 @@ var cartValidation = require('./lib/cartValidation.js');
 var credentials = require('./credentials.js');
 var Vacation = require('./models/vacation.js');
 var Attraction = require('./models/attraction.js');
+var permissions = require('./lib/permissions.js');
 
 var app = express();
+
+var auth = require('./lib/auth.js')(app, {
+// baseUrl опционален; по умолчанию будет
+// использоваться localhost, если вы пропустите его;
+// имеет смысл установить его, если вы не
+// работаете на своей локальной машине. Например,
+// если вы используете staging-сервер,
+// можете установить в переменной окружения BASE_URL
+// https://staging.travel.com
+    baseUrl: process.env.BASE_URL,
+    providers: credentials.authProviders,
+    successRedirect: '/account',
+    failureRedirect: '/unauthorized'
+});
+// auth.init() соединяется в промежуточном ПО Passport:
+auth.init();
+
 
 var opts = {
     server: {
@@ -268,6 +286,28 @@ app.use(function(req, res, next){
 
 // import all other routes
 require('./routes.js')(app);
+
+// наши маршруты auth:
+auth.registerRoutes();
+// маршруты покупателя
+app.get('/account', permissions.customerOnly, function(req, res){
+    res.render('account');
+});
+app.get('/account/order-history', permissions.customerOnly, function(req, res){
+    res.render('account/order-history');
+});
+app.get('/account/email-prefs', permissions.customerOnly, function(req, res){
+    res.render('account/email-prefs');
+});
+// маршруты сотрудника
+app.get('/sales', permissions.employeeOnly, function(req, res){
+    res.render('sales');
+});
+// нам также нужна страница 'Не авторизирован'
+app.get('/unauthorized', function(req, res) {
+    res.status(403).render('unauthorized');
+});
+
 
 
 // API ROUTES; only via EXPRESS
