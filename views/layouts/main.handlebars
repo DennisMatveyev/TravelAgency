@@ -13,11 +13,19 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
-    <link rel="stylesheet" href="/css/my.css">
+    <link rel="stylesheet" href="{{static '/css/main.css'}}">
+
+    {{#each _bundles.css}}
+        <link rel="stylesheet" href="{{static .}}">
+    {{/each}}
+    {{#each _bundles.js.head}}
+        <script src="{{static .}}"></script>
+    {{/each}}
 </head>
 <body>
 
-<header><img src="/img/logo.png" alt="logo" style="width: 50px;"></header>
+<!--<header><img src="/img/logo.png" alt="logo" style="width: 50px;"></header>-->
+<header><img src="{{static '/img/logo.jpg'}}" alt="Логотип" style="width: 50px;"></header>
 
 {{#if flash}}
     <div class="alert alert-dismissible alert-{{flash.type}}">
@@ -29,6 +37,8 @@
 {{{body}}}
 
 <script src="http://code.jquery.com/jquery-2.0.2.min.js"></script>
+<script src="{{static '/js/app.min.3a7ad92b.js'}}"></script>
+<link rel="stylesheet" href="{{static '/css/app.min.b3f848e2.css'}}">
 
 {{{_sections.jquery}}}
 

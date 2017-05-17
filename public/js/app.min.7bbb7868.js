@@ -1,0 +1,1 @@
+$(document).ready(function(){console.log("корзина для покупок инициализирована")}),$(document).ready(function(){console.log("форма обратной связи инициализирована")});

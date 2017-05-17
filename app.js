@@ -116,13 +116,16 @@ Vacation.find(function(err, vacations){
 //     }
 // });
 
-// template engine Handlebars setting with custom helper
+// template engine Handlebars setting with custom helpers
 var handlebars = require('express-handlebars').create({ defaultLayout:'main',
                                                         helpers: {
                                                             section: function(name, options){
                                                                 if(!this._sections) this._sections = {};
                                                                 this._sections[name] = options.fn(this);
                                                                 return null;
+                                                            },
+                                                            static: function(name) {
+                                                                return require('./lib/static.js').map(name);
                                                             }
                                                         }
                                                       });

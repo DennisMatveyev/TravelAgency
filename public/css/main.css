@@ -1,0 +1,10 @@
+body {
+  background-image: url("/img/background.png");
+}
+a.currency {
+  text-decoration: none;
+}
+.currency.selected {
+  font-weight: bold;
+  font-size: 150%;
+}
