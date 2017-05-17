@@ -186,6 +186,18 @@ app.use(require('body-parser').urlencoded({ extended: true }));
 // middleware for CORS for our API
 app.use('/api', require('cors')());
 
+// обеспечение CSRF безопасности должно быть вставлено
+// после анализатора тела запроса, анализатора cookie и express-сессии;
+// Если есть API, мы наверняка не захотим, чтобы промежуточное ПО csurf с ним взаи-
+// модействовало. Если мы хотим ограничить доступ к API с остальных сайтов, нужно
+// посмотреть функциональность API key в connect-rest. Для предотвращения взаимодействия
+// csurf с промежуточным ПО нужно подключить его перед тем, как подключим csurf.
+app.use(require('csurf')());
+app.use(function(req, res, next){
+    res.locals._csrfToken = req.csrfToken();
+    next();
+});
+
 // choose logging tool depending on mode
 switch(app.get('env')){
     case 'development':
