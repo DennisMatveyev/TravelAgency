@@ -249,6 +249,23 @@ app.use(function(req, res, next){
 // import all other routes
 require('./routes.js')(app);
 
+// middleware for automatic visualization of views
+var autoViews = {};
+
+app.use(function(req, res, next){
+    var path = req.path.toLowerCase();
+    // проверка кэша; если он там есть, визуализируем представление
+    if(autoViews[path]) return res.render(autoViews[path]);
+    // если его нет в кэше, проверяем наличие
+    // подходящего файла .handlebars
+    if(fs.existsSync(__dirname + '/views' + path + '.handlebars')){
+        autoViews[path] = path.replace(/^\//, '');
+        return res.render(autoViews[path]);
+    }
+    // представление не найдено; переходим к обработчику кода 404
+    next();
+});
+
 // 404
 app.use(function(err, req, res, next){
     res.status(404);
